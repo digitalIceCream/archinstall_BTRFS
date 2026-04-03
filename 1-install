@@ -58,7 +58,7 @@ ROOT_DEV="${DISK}p${ROOT_PART}"
 # SWP_MAPPER="/dev/mapper/${LUKS_SWP_NAME}"    # replaces SWP_DEV for swap
 
 # -- Sizes --------------------------------------------------------------------
-ESP_SIZE="512MiB"             # EFI System Partition
+ESP_SIZE="1024MiB"            # EFI System Partition
 SWP_SIZE="100GiB"             # Swap — must be >= RAM for hibernation
                               # ROOT gets remainder automatically
 
