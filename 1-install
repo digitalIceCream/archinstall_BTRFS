@@ -109,7 +109,7 @@ read -rp "!! This will DESTROY all data on ${DISK} !! Type 'yes' to continue: " 
 # PARTITIONING
 # =============================================================================
 # Layout:
-#   p1  ESP       512MiB   ef00  FAT32
+#   p1  ESP       1024MiB  ef00  FAT32
 #   p2  swap      100GiB   8200  plain swap
 #   p3  root      rest     8300  BTRFS
 #
