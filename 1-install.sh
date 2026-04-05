@@ -131,6 +131,11 @@ sgdisk --new=0:0:+${SWP_SIZE}  --typecode=0:8200 --change-name=0:swap "${DISK}"
 sgdisk --new=0:0:0              --typecode=0:8300 --change-name=0:root "${DISK}"
 partprobe "${DISK}"
 
+wipefs -af "${ESP_DEV}"
+wipefs -af "${SWP_DEV}"
+wipefs -af "${ROOT_DEV}"
+partprobe "${DISK}"
+
 echo "Partitioning complete:"
 lsblk "${DISK}"
 sleep 5
