@@ -58,9 +58,9 @@ ROOT_DEV="${DISK}p${ROOT_PART}"
 # SWP_MAPPER="/dev/mapper/${LUKS_SWP_NAME}"    # replaces SWP_DEV for swap
 
 # -- Sizes --------------------------------------------------------------------
-ESP_SIZE="1024MiB"            # EFI System Partition
-SWP_SIZE="100GiB"             # Swap — must be >= RAM for hibernation
-                              # ROOT gets remainder automatically
+ESP_SIZE="512MiB"            # EFI System Partition
+SWP_SIZE="48GiB"             # Swap — must be >= RAM for hibernation
+                             # ROOT gets remainder automatically
 
 # -- BTRFS --------------------------------------------------------------------
 BTRFS_LABEL="archlinux"
@@ -92,7 +92,7 @@ fi
 echo "Network: OK"
 
 if [[ ! -b "${DISK}" ]]; then
-    echo "ERROR: Disk ${DISK} not found. Check DISK variable."
+    echo "ERROR: Disk ${DISK} not found. Check DISK variable. Aborting."
     exit 1
 fi
 echo "Target disk: ${DISK}"
@@ -109,8 +109,8 @@ read -rp "!! This will DESTROY all data on ${DISK} !! Type 'yes' to continue: " 
 # PARTITIONING
 # =============================================================================
 # Layout:
-#   p1  ESP       1024MiB  ef00  FAT32
-#   p2  swap      100GiB   8200  plain swap
+#   p1  ESP       512 MiB  ef00  FAT32
+#   p2  swap      48 GiB   8200  plain swap
 #   p3  root      rest     8300  BTRFS
 #
 # [LUKS] To add encryption, change p2 and p3 type codes to 8309
@@ -121,7 +121,8 @@ read -rp "!! This will DESTROY all data on ${DISK} !! Type 'yes' to continue: " 
 echo ""
 echo "=== Partitioning ${DISK} ==="
 
-sgdisk --zap-all "${DISK}"
+sgdisk --zap-all --clear "${DISK}"
+partprobe "${DISK}"
 wipefs -af "${DISK}"
 partprobe "${DISK}"
 
@@ -317,13 +318,6 @@ genfstab -U /mnt >> /mnt/etc/fstab
 
 echo "Generated fstab — root entry should have NO subvol= option:"
 cat /mnt/etc/fstab
-
-# =============================================================================
-# COPY CONFIGURE SCRIPT INTO CHROOT
-# =============================================================================
-
-cp 2-configure.sh /mnt/root/2-configure.sh
-chmod +x /mnt/root/2-configure.sh
 
 # =============================================================================
 # DONE
