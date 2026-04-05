@@ -252,7 +252,7 @@ mount "${ESP_DEV}" /mnt/boot/efi
 swapon "${SWP_DEV}"
 
 echo "Mount layout:"
-findmnt --tree /mnt
+findmnt --tree
 sleep 5
 
 # =============================================================================

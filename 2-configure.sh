@@ -28,10 +28,10 @@ set -euo pipefail
 # VARIABLES — must match 1-install.sh
 # =============================================================================
 
-DISK="/dev/nvme0n1"
-ROOT_PART="${DISK}p3"
-SWP_PART="${DISK}p2"
-ESP_DEV="${DISK}p1"
+export DISK="/dev/nvme0n1"
+export ROOT_PART="${DISK}p3"
+export SWP_PART="${DISK}p2"
+export ESP_DEV="${DISK}p1"
 
 # [LUKS] When adding encryption:
 # LUKS_ROOT_NAME="cryptroot"
@@ -39,15 +39,15 @@ ESP_DEV="${DISK}p1"
 # ROOT_UUID stays the same (LUKS partition UUID, not mapper UUID)
 # SWP_UUID stays the same
 
-TIMEZONE="Europe/Berlin"
-LOCALE="en_GB.UTF-8"
-KEYMAP="de-latin1-nodeadkeys"
+export TIMEZONE="Europe/Berlin"
+export LOCALE="en_GB.UTF-8"
+export KEYMAP="de-latin1-nodeadkeys"
 
-BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
+export BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
 
 # UUIDs — read from actual partitions at runtime
-ROOT_UUID="$(blkid -s UUID -o value "${ROOT_PART}")"
-SWP_UUID="$(blkid -s UUID -o value "${SWP_PART}")"
+export ROOT_UUID="$(blkid -s UUID -o value "${ROOT_PART}")"
+export SWP_UUID="$(blkid -s UUID -o value "${SWP_PART}")"
 
 # =============================================================================
 # INTERACTIVE PROMPTS
