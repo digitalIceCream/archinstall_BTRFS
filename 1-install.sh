@@ -133,6 +133,7 @@ partprobe "${DISK}"
 
 echo "Partitioning complete:"
 lsblk "${DISK}"
+sleep 5
 
 # =============================================================================
 # [LUKS] ENCRYPTION WOULD BE INSERTED HERE
@@ -159,6 +160,7 @@ mkfs.btrfs -L "${BTRFS_LABEL}" "${ROOT_DEV}"
 mkswap -L swap "${SWP_DEV}"
 
 echo "Filesystems created."
+sleep 5
 
 # =============================================================================
 # BTRFS SUBVOLUMES
@@ -198,6 +200,7 @@ btrfs subvolume create /mnt/@grub
 
 echo "Subvolumes created:"
 btrfs subvolume list /mnt
+sleep 5
 
 umount /mnt
 
@@ -245,6 +248,7 @@ swapon "${SWP_DEV}"
 
 echo "Mount layout:"
 findmnt --tree /mnt
+sleep 5
 
 # =============================================================================
 # SET BTRFS DEFAULT SUBVOLUME TO @
@@ -264,6 +268,7 @@ AT_ID=$(btrfs subvolume list /mnt | awk '/ path @$/ {print $2}')
 btrfs subvolume set-default "${AT_ID}" /mnt
 echo "Default subvolume set to ID ${AT_ID} (@)"
 btrfs subvolume get-default /mnt
+sleep 5
 
 # =============================================================================
 # MIRRORLIST
