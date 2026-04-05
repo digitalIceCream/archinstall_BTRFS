@@ -39,17 +39,17 @@ set -euo pipefail
 # =============================================================================
 
 # -- Disk ---------------------------------------------------------------------
-DISK="/dev/nvme0n1"           # Target disk — confirm with: lsblk
+export DISK="/dev/nvme0n1"           # Target disk — confirm with: lsblk
 
 # Partition numbers
-ESP_PART="1"                  # EFI System Partition
-SWP_PART="2"                  # Swap partition
-ROOT_PART="3"                 # Root (BTRFS) partition
+export ESP_PART="1"                  # EFI System Partition
+export SWP_PART="2"                  # Swap partition
+export ROOT_PART="3"                 # Root (BTRFS) partition
 
 # Derived partition paths (NVMe uses 'p' separator)
-ESP_DEV="${DISK}p${ESP_PART}"
-SWP_DEV="${DISK}p${SWP_PART}"
-ROOT_DEV="${DISK}p${ROOT_PART}"
+export ESP_DEV="${DISK}p${ESP_PART}"
+export SWP_DEV="${DISK}p${SWP_PART}"
+export ROOT_DEV="${DISK}p${ROOT_PART}"
 
 # -- [LUKS] When adding encryption: ------------------------------------------
 # LUKS_ROOT_NAME="cryptroot"
@@ -58,20 +58,20 @@ ROOT_DEV="${DISK}p${ROOT_PART}"
 # SWP_MAPPER="/dev/mapper/${LUKS_SWP_NAME}"    # replaces SWP_DEV for swap
 
 # -- Sizes --------------------------------------------------------------------
-ESP_SIZE="512MiB"            # EFI System Partition
-SWP_SIZE="48GiB"             # Swap — must be >= RAM for hibernation
+export ESP_SIZE="512MiB"            # EFI System Partition
+export SWP_SIZE="48GiB"             # Swap — must be >= RAM for hibernation
                              # ROOT gets remainder automatically
 
 # -- BTRFS --------------------------------------------------------------------
-BTRFS_LABEL="archlinux"
-BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
+export BTRFS_LABEL="archlinux"
+export BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
 # noatime               — skip access time updates on reads
 #                         on BTRFS with CoW every read would trigger a write
 # compress-force=zstd:1 — compress all data, level 1 (fast, good ratio)
 # space_cache=v2        — modern free space tracking, always use v2
 
 # -- System -------------------------------------------------------------------
-REFLECTOR_COUNTRY="Germany"
+export REFLECTOR_COUNTRY="Germany"
 
 # =============================================================================
 # SANITY CHECKS
