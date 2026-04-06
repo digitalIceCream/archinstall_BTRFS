@@ -158,7 +158,7 @@ echo ""
 echo "=== Configuring mkinitcpio ==="
 cat > /etc/mkinitcpio.conf.d/arch.conf << EOF
 MODULES=(btrfs)
-HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block filesystems fsck)
+HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck grub-btrfs-overlayfs)
 EOF
 
 mkinitcpio -P

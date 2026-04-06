@@ -70,14 +70,8 @@ snapper list-configs
 echo ""
 echo "=== Enabling services ==="
 
-systemctl enable NetworkManager          # networking
-systemctl enable reflector.timer         # mirrorlist auto-update
 systemctl enable snapper-timeline.timer  # creates scheduled snapshots
 systemctl enable snapper-cleanup.timer   # prunes old snapshots per config
-
-# grub-btrfsd watches /.snapshots for changes and automatically
-# regenerates /boot/grub/grub.cfg so snapshots appear in GRUB menu
-systemctl enable grub-btrfsd
 
 # =============================================================================
 # VERIFY BTRFS DEFAULT SUBVOLUME

@@ -234,16 +234,17 @@ echo "=== Mounting subvolumes ==="
 mount -o "${BTRFS_MOUNT_OPTS}" "${ROOT_DEV}" /mnt
 
 # Create mountpoints
-mkdir -p /mnt/{home,.snapshots,var/log,var/cache,var/tmp,boot}
+mkdir -p /mnt/{home,.snapshots,var/log,var/cache,var/tmp,boot,btrfs}
 mkdir -p /mnt/boot/{efi,grub}
 
 # All other subvolumes — explicit subvol=
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@home"      "${ROOT_DEV}" /mnt/home
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@snapshots" "${ROOT_DEV}" /mnt/.snapshots
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@log"       "${ROOT_DEV}" /mnt/var/log
-mount -o "${BTRFS_MOUNT_OPTS},subvol=@cache"     "${ROOT_DEV}" /mnt/var/cache
+mount -o "${BTRFS_MOUNT_OPTS},subvol=@pkg"       "${ROOT_DEV}" /mnt/var/cache/pacman/pkg
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@tmp"       "${ROOT_DEV}" /mnt/var/tmp
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@grub"      "${ROOT_DEV}" /mnt/boot/grub
+mount -o "${BTRFS_MOUNT_OPTS},subvolid=5"        "${ROOT_DEV}" /mnt/btrfs
 
 # ESP — FAT32 mounted over /boot/efi
 mount "${ESP_DEV}" /mnt/boot/efi
@@ -253,26 +254,6 @@ swapon "${SWP_DEV}"
 
 echo "Mount layout:"
 findmnt --tree
-sleep 5
-
-# =============================================================================
-# SET BTRFS DEFAULT SUBVOLUME TO @
-# =============================================================================
-# Fresh BTRFS always has ID 5 (top-level) as default. We need @ instead.
-#
-# This makes the no-subvol= root mount work correctly on first boot,
-# and gives snapper a meaningful default to change when rolling back.
-#
-# [LUKS] Identical — encryption does not affect subvolume IDs.
-# =============================================================================
-
-echo ""
-echo "=== Setting BTRFS default subvolume to @ ==="
-
-AT_ID=$(btrfs subvolume list /mnt | awk '/ path @$/ {print $2}')
-btrfs subvolume set-default "${AT_ID}" /mnt
-echo "Default subvolume set to ID ${AT_ID} (@)"
-btrfs subvolume get-default /mnt
 sleep 5
 
 # =============================================================================
