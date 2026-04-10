@@ -152,7 +152,7 @@ sleep 5
 # cryptsetup --type luks2 -v -y luksFormat "${ROOT_DEV}"
 # cryptsetup open "${ROOT_DEV}" "${LUKS_ROOT_NAME}"
 #
-# cryptsetup --type luks2 -v -y lukFormat "${SWP_DEV}"
+# cryptsetup --type luks2 -v -y luksFormat "${SWP_DEV}"
 # cryptsetup open "${SWP_DEV}" "${LUKS_SWP_NAME}"
 #
 # Then replace ROOT_DEV → ROOT_MAPPER and SWP_DEV → SWP_MAPPER
@@ -280,7 +280,7 @@ pacstrap -K /mnt \
 # =============================================================================
 # genfstab reads current mounts and writes fstab.
 #
-# Root mounted with subvol=@ → genfstab hardcodes root subvolume
+# Root mounted with subvol=@ → fstab hardcodes root subvolume as subvol=/@
 # [LUKS] Output is identical. The UUID in the root entry will reflect
 # the block device actually mounted — no special handling needed.
 # =============================================================================
@@ -289,7 +289,7 @@ echo ""
 echo "=== Generating fstab ==="
 genfstab -U /mnt >> /mnt/etc/fstab
 
-echo "Generated fstab — root entry should have NO subvol= option:"
+echo "Generated fstab — root entry should have subvol=@ option:"
 cat /mnt/etc/fstab
 
 # =============================================================================
@@ -301,7 +301,7 @@ echo "============================================="
 echo "  1-install.sh complete."
 echo ""
 echo "  Verify fstab above — root entry must"
-echo "  have NO subvol= option."
+echo "  have subvol=@ option."
 echo ""
 echo "  Next:"
 echo "    arch-chroot /mnt"
