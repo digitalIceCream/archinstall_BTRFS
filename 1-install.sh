@@ -11,8 +11,14 @@
 #   UEFI reads ESP (FAT32) → loads grubx64.efi
 #   GRUB reads grub.cfg from BTRFS (has own BTRFS driver)
 #   GRUB loads kernel + initramfs from /boot (on BTRFS @)
-#   kernel mounts BTRFS default subvolume as / (no subvol= hardcode)
-#   snapper rollback works: changes default subvolume, next boot honours it
+#   kernel mounts BTRFS subvol=@ as /
+#   rollback strategy → manually renaming desired snapshot to '@'
+# 	  all snapshots and @ live as siblings under top-level (ID 5)
+# 	  fstab hardcodes subvol=@ for root
+#  	  mount subvolid=5 at /btrfs (fstab takes care of that)
+#   	  mv @ @.broken
+#   	  mv @working_snapshot @
+#   	  reboot
 #
 # NOTE — encryption extension:
 #   This script is deliberately structured so LUKS can be added later
@@ -221,6 +227,7 @@ mount -o "${BTRFS_MOUNT_OPTS},subvol=@snapshots" "${ROOT_DEV}" /mnt/.snapshots
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@log"       "${ROOT_DEV}" /mnt/var/log
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@cache"     "${ROOT_DEV}" /mnt/var/cache
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@tmp"       "${ROOT_DEV}" /mnt/var/tmp
+# Top level BTRFS (ID 5) needed for rollback. fstab auto-mounts that
 mount -o "${BTRFS_MOUNT_OPTS},subvolid=5"        "${ROOT_DEV}" /mnt/btrfs
 
 # ESP — FAT32 mounted over /boot/efi
@@ -273,9 +280,7 @@ pacstrap -K /mnt \
 # =============================================================================
 # genfstab reads current mounts and writes fstab.
 #
-# Root mounted without subvol= → genfstab writes root entry without
-# subvol= → snapper rollback works correctly on first boot and after.
-#
+# Root mounted with subvol=@ → genfstab hardcodes root subvolume
 # [LUKS] Output is identical. The UUID in the root entry will reflect
 # the block device actually mounted — no special handling needed.
 # =============================================================================
