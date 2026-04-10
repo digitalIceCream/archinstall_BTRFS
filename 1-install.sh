@@ -66,7 +66,7 @@ ROOT_DEV="${DISK}p${ROOT_PART}"
 # -- Sizes --------------------------------------------------------------------
 ESP_SIZE="512MiB"            # EFI System Partition
 SWP_SIZE="48GiB"             # Swap — must be >= RAM for hibernation
- 	                            # ROOT gets remainder automatically
+                             # ROOT gets remainder automatically
 
 # -- BTRFS --------------------------------------------------------------------
 BTRFS_LABEL="archlinux"
