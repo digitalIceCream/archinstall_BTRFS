@@ -39,17 +39,17 @@ set -euo pipefail
 # =============================================================================
 
 # -- Disk ---------------------------------------------------------------------
-export DISK="/dev/nvme0n1"           # Target disk — confirm with: lsblk
+DISK="/dev/nvme0n1"           # Target disk — confirm with: lsblk
 
 # Partition numbers
-export ESP_PART="1"                  # EFI System Partition
-export SWP_PART="2"                  # Swap partition
-export ROOT_PART="3"                 # Root (BTRFS) partition
+ESP_PART="1"                  # EFI System Partition
+SWP_PART="2"                  # Swap partition
+ROOT_PART="3"                 # Root (BTRFS) partition
 
 # Derived partition paths (NVMe uses 'p' separator)
-export ESP_DEV="${DISK}p${ESP_PART}"
-export SWP_DEV="${DISK}p${SWP_PART}"
-export ROOT_DEV="${DISK}p${ROOT_PART}"
+ESP_DEV="${DISK}p${ESP_PART}"
+SWP_DEV="${DISK}p${SWP_PART}"
+ROOT_DEV="${DISK}p${ROOT_PART}"
 
 # -- [LUKS] When adding encryption: ------------------------------------------
 # LUKS_ROOT_NAME="cryptroot"
@@ -58,20 +58,20 @@ export ROOT_DEV="${DISK}p${ROOT_PART}"
 # SWP_MAPPER="/dev/mapper/${LUKS_SWP_NAME}"    # replaces SWP_DEV for swap
 
 # -- Sizes --------------------------------------------------------------------
-export ESP_SIZE="512MiB"            # EFI System Partition
-export SWP_SIZE="48GiB"             # Swap — must be >= RAM for hibernation
-                             # ROOT gets remainder automatically
+ESP_SIZE="512MiB"            # EFI System Partition
+SWP_SIZE="48GiB"             # Swap — must be >= RAM for hibernation
+ 	                            # ROOT gets remainder automatically
 
 # -- BTRFS --------------------------------------------------------------------
-export BTRFS_LABEL="archlinux"
-export BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
+BTRFS_LABEL="archlinux"
+BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
 # noatime               — skip access time updates on reads
 #                         on BTRFS with CoW every read would trigger a write
 # compress-force=zstd:1 — compress all data, level 1 (fast, good ratio)
 # space_cache=v2        — modern free space tracking, always use v2
 
 # -- System -------------------------------------------------------------------
-export REFLECTOR_COUNTRY="Germany"
+REFLECTOR_COUNTRY="Germany"
 
 # =============================================================================
 # SANITY CHECKS
@@ -212,26 +212,12 @@ umount /mnt
 # =============================================================================
 # MOUNT SUBVOLUMES
 # =============================================================================
-# Root is mounted WITHOUT subvol= — intentional and critical.
-#
-# The kernel mounts whatever the BTRFS default subvolume is set to.
-# snapper rollback changes that default to a snapshot subvolume ID.
-# If fstab hardcodes subvol=@, it overrides the default on every boot
-# and rollback silently does nothing — you always get @ regardless.
-# No subvol= on root = rollback works as designed.
-#
-# All other subvolumes keep explicit subvol= so they always mount
-# their specific subvolume regardless of what rollback does to root.
-#
-# [LUKS] Mount commands are identical — just replace ROOT_DEV
-# with ROOT_MAPPER and SWP_DEV with SWP_MAPPER.
-# =============================================================================
 
 echo ""
 echo "=== Mounting subvolumes ==="
 
-# Root — no subvol= intentionally
-mount -o "${BTRFS_MOUNT_OPTS}" "${ROOT_DEV}" /mnt
+# mount root subvolume
+mount -o "${BTRFS_MOUNT_OPTS},subvol=@" "${ROOT_DEV}" /mnt
 
 # Create mountpoints
 mkdir -p /mnt/{home,.snapshots,var/log,var/cache,var/tmp,boot,btrfs}
@@ -241,7 +227,7 @@ mkdir -p /mnt/boot/{efi,grub}
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@home"      "${ROOT_DEV}" /mnt/home
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@snapshots" "${ROOT_DEV}" /mnt/.snapshots
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@log"       "${ROOT_DEV}" /mnt/var/log
-mount -o "${BTRFS_MOUNT_OPTS},subvol=@pkg"       "${ROOT_DEV}" /mnt/var/cache/pacman/pkg
+mount -o "${BTRFS_MOUNT_OPTS},subvol=@cache"     "${ROOT_DEV}" /mnt/var/cache
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@tmp"       "${ROOT_DEV}" /mnt/var/tmp
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@grub"      "${ROOT_DEV}" /mnt/boot/grub
 mount -o "${BTRFS_MOUNT_OPTS},subvolid=5"        "${ROOT_DEV}" /mnt/btrfs
