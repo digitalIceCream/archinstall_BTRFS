@@ -146,7 +146,7 @@ sleep 5
 # cryptsetup --type luks2 -v -y luksFormat "${ROOT_DEV}"
 # cryptsetup open "${ROOT_DEV}" "${LUKS_ROOT_NAME}"
 #
-# cryptsetup --type luks2 -v -y luksFormat "${SWP_DEV}"
+# cryptsetup --type luks2 -v -y lukFormat "${SWP_DEV}"
 # cryptsetup open "${SWP_DEV}" "${LUKS_SWP_NAME}"
 #
 # Then replace ROOT_DEV → ROOT_MAPPER and SWP_DEV → SWP_MAPPER
@@ -179,13 +179,6 @@ sleep 5
 # @log           →  /var/log       excluded from snapshots
 # @cache         →  /var/cache     excluded from snapshots
 # @tmp           →  /var/tmp       excluded from snapshots
-# @grub          →  /boot/grub     protected from rollback
-#
-# Why @grub is separate:
-#   GRUB modules must match the installed EFI stub version.
-#   Rolling back / could revert /boot/grub to an older version that
-#   conflicts with the stub on the ESP — potentially breaking boot.
-#   Separate subvolume = rollbacks never touch GRUB modules.
 #
 # [LUKS] Subvolume layout is identical with encryption.
 # =============================================================================
@@ -201,7 +194,6 @@ btrfs subvolume create /mnt/@snapshots
 btrfs subvolume create /mnt/@log
 btrfs subvolume create /mnt/@cache
 btrfs subvolume create /mnt/@tmp
-btrfs subvolume create /mnt/@grub
 
 echo "Subvolumes created:"
 btrfs subvolume list /mnt
@@ -221,7 +213,7 @@ mount -o "${BTRFS_MOUNT_OPTS},subvol=@" "${ROOT_DEV}" /mnt
 
 # Create mountpoints
 mkdir -p /mnt/{home,.snapshots,var/log,var/cache,var/tmp,boot,btrfs}
-mkdir -p /mnt/boot/{efi,grub}
+mkdir -p /mnt/boot/efi
 
 # All other subvolumes — explicit subvol=
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@home"      "${ROOT_DEV}" /mnt/home
@@ -229,7 +221,6 @@ mount -o "${BTRFS_MOUNT_OPTS},subvol=@snapshots" "${ROOT_DEV}" /mnt/.snapshots
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@log"       "${ROOT_DEV}" /mnt/var/log
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@cache"     "${ROOT_DEV}" /mnt/var/cache
 mount -o "${BTRFS_MOUNT_OPTS},subvol=@tmp"       "${ROOT_DEV}" /mnt/var/tmp
-mount -o "${BTRFS_MOUNT_OPTS},subvol=@grub"      "${ROOT_DEV}" /mnt/boot/grub
 mount -o "${BTRFS_MOUNT_OPTS},subvolid=5"        "${ROOT_DEV}" /mnt/btrfs
 
 # ESP — FAT32 mounted over /boot/efi
