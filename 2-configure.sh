@@ -28,10 +28,10 @@ set -euo pipefail
 # VARIABLES — must match 1-install.sh
 # =============================================================================
 
-export DISK="/dev/nvme0n1"
-export ROOT_PART="${DISK}p3"
-export SWP_PART="${DISK}p2"
-export ESP_DEV="${DISK}p1"
+DISK="/dev/nvme0n1"
+ROOT_PART="${DISK}p3"
+SWP_PART="${DISK}p2"
+ESP_DEV="${DISK}p1"
 
 # [LUKS] When adding encryption:
 # LUKS_ROOT_NAME="cryptroot"
@@ -39,15 +39,15 @@ export ESP_DEV="${DISK}p1"
 # ROOT_UUID stays the same (LUKS partition UUID, not mapper UUID)
 # SWP_UUID stays the same
 
-export TIMEZONE="Europe/Berlin"
-export LOCALE="en_GB.UTF-8"
-export KEYMAP="de-latin1-nodeadkeys"
+TIMEZONE="Europe/Berlin"
+LOCALE="en_GB.UTF-8"
+KEYMAP="de-latin1-nodeadkeys"
 
-export BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
+BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
 
 # UUIDs — read from actual partitions at runtime
-export ROOT_UUID="$(blkid -s UUID -o value "${ROOT_PART}")"
-export SWP_UUID="$(blkid -s UUID -o value "${SWP_PART}")"
+ROOT_UUID="$(blkid -s UUID -o value "${ROOT_PART}")"
+SWP_UUID="$(blkid -s UUID -o value "${SWP_PART}")"
 
 # =============================================================================
 # INTERACTIVE PROMPTS
@@ -158,7 +158,7 @@ echo ""
 echo "=== Configuring mkinitcpio ==="
 cat > /etc/mkinitcpio.conf.d/arch.conf << EOF
 MODULES=(btrfs)
-HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck grub-btrfs-overlayfs)
+HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block filesystems fsck)
 EOF
 
 mkinitcpio -P
@@ -170,8 +170,11 @@ mkinitcpio -P
 #
 #   root=UUID=<uuid>
 #       Points kernel at the BTRFS partition.
-#       No subvol= here — BTRFS default subvolume handles that.
-#       This is what allows snapper rollback to work.
+#
+#   rootflags=subvol=@
+#       Kernel mounts subvol @ as root directly.
+#       Rollback: rename snapshots under top-level (ID 5),
+#       the name '@' always points to the active root.
 #
 #   resume=UUID=<uuid>
 #       Points kernel at swap partition for hibernation resume.
@@ -179,8 +182,6 @@ mkinitcpio -P
 #       before mounting root properly.
 #
 #   rw          — mount root read-write
-#   quiet       — suppress most boot messages
-#   loglevel=3  — only errors shown during boot
 #
 # [LUKS] When adding encryption, cmdline changes to:
 #   rd.luks.name=<ROOT_UUID>=cryptroot
@@ -193,7 +194,7 @@ mkinitcpio -P
 echo ""
 echo "=== Configuring GRUB ==="
 
-GRUB_CMDLINE="root=UUID=${ROOT_UUID} resume=UUID=${SWP_UUID} rw quiet loglevel=3"
+GRUB_CMDLINE="root=UUID=${ROOT_UUID} rootflags=subvol=@ resume=UUID=${SWP_UUID} rw"
 
 sed -i "s|^GRUB_CMDLINE_LINUX=.*|GRUB_CMDLINE_LINUX=\"${GRUB_CMDLINE}\"|" \
     /etc/default/grub
@@ -231,24 +232,6 @@ systemctl enable reflector.timer  # mirrorlist auto-update
 # grub-btrfsd watches /.snapshots and regenerates grub.cfg when
 # snapshots are added or removed — idle until snapper is configured
 systemctl enable grub-btrfsd
- 
-# =============================================================================
-# VERIFY BTRFS DEFAULT SUBVOLUME
-# =============================================================================
- 
-echo ""
-echo "=== Verifying BTRFS default subvolume ==="
-DEFAULT=$(btrfs subvolume get-default /)
-echo "Current default: ${DEFAULT}"
-if ! echo "${DEFAULT}" | grep -q "path @$"; then
-    echo ""
-    echo "WARNING: Default subvolume is not @"
-    echo "Fix with:"
-    echo "  ID=\$(btrfs subvolume list / | awk '/ path @\$/ {print \$2}')"
-    echo "  btrfs subvolume set-default \$ID /"
-else
-    echo "OK — default subvolume is @"
-fi
 
 # =============================================================================
 # DONE
