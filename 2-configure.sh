@@ -6,7 +6,6 @@
 # Picks up where 1-install.sh left off. At this point:
 #   - BTRFS subvolumes are mounted (now / in chroot)
 #   - Base system is installed via pacstrap
-#   - fstab generated with no subvol= on root entry
 #
 # This script handles:
 #   - Interactive prompts for hostname and username
@@ -42,8 +41,6 @@ ESP_DEV="${DISK}p1"
 TIMEZONE="Europe/Berlin"
 LOCALE="en_GB.UTF-8"
 KEYMAP="de-latin1-nodeadkeys"
-
-BTRFS_MOUNT_OPTS="rw,noatime,compress-force=zstd:1,space_cache=v2"
 
 # UUIDs — read from actual partitions at runtime
 ROOT_UUID="$(blkid -s UUID -o value "${ROOT_PART}")"
@@ -248,7 +245,6 @@ echo "    Login as ${USERNAME}"
 echo ""
 echo "  Post-boot verification:"
 echo "    findmnt --tree"
-echo "    btrfs subvolume get-default /"
 echo "    swapon --show"
 echo ""
 echo "  When ready to reboot:"
