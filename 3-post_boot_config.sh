@@ -33,6 +33,7 @@ echo "=== Configuring snapper ==="
 
 # Root config
 umount /.snapshots
+rm -d /.snaphots
 snapper -c root create-config /
 btrfs subvolume delete /.snapshots
 mkdir /.snapshots
