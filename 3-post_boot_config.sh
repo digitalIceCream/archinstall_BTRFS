@@ -1,5 +1,4 @@
-#!/bin/sh
-
+#!/usr/bin/env bash
 
 # =============================================================================
 # SNAPPER
@@ -21,6 +20,13 @@
 #
 # [LUKS] Snapper setup is identical with encryption.
 # =============================================================================
+
+set -euo pipefail
+
+if [[ $(id -u) -ne 0 ]]; then
+    echo "ERROR: This script must be run as root. Aborting."
+    exit 1
+fi
 
 echo ""
 echo "=== Configuring snapper ==="
@@ -70,26 +76,8 @@ snapper list-configs
 echo ""
 echo "=== Enabling services ==="
 
-systemctl enable snapper-timeline.timer  # creates scheduled snapshots
-systemctl enable snapper-cleanup.timer   # prunes old snapshots per config
-
-# =============================================================================
-# VERIFY BTRFS DEFAULT SUBVOLUME
-# =============================================================================
-
-echo ""
-echo "=== Verifying BTRFS default subvolume ==="
-DEFAULT=$(btrfs subvolume get-default /)
-echo "Current default: ${DEFAULT}"
-if ! echo "${DEFAULT}" | grep -q "path @$"; then
-    echo ""
-    echo "WARNING: Default subvolume is not @"
-    echo "Fix with:"
-    echo "  ID=\$(btrfs subvolume list / | awk '/ path @\$/ {print \$2}')"
-    echo "  btrfs subvolume set-default \$ID /"
-else
-    echo "OK — default subvolume is @"
-fi
+systemctl enable --now snapper-timeline.timer  # creates scheduled snapshots
+systemctl enable --now snapper-cleanup.timer   # prunes old snapshots per config
 
 # =============================================================================
 # DONE

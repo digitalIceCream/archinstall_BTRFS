@@ -16,8 +16,9 @@
 # 	  all snapshots and @ live as siblings under top-level (ID 5)
 # 	  fstab hardcodes subvol=@ for root
 #  	  mount subvolid=5 at /btrfs (fstab takes care of that)
-#   	  mv @ @.broken
-#   	  mv @working_snapshot @
+#   	  btrfs subvolume snapshot /btrfs/@snapshots/N/snapshot /btrfs/@new
+#   	  btrfs subvolume delete /btrfs/@
+#   	  mv /btrfs/@new /btrfs/@
 #   	  reboot
 #
 # NOTE — encryption extension:
