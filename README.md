@@ -17,7 +17,7 @@ UEFI → GRUB → BTRFS (flat subvolume layout)
 |--------|----------|---------|
 | `1-install.sh` | Live ISO | Partition, format, create subvolumes, pacstrap, generate fstab |
 | `2-configure.sh` | `arch-chroot` | Locale, users, mkinitcpio, GRUB, services |
-| `3-post_boot_config.sh` | First boot | Snapper configuration, timers *(planned)* |
+| `3-post_boot_config.sh` | First boot (as root) | Snapper configuration, snapshot timers |
 
 ### Usage
 
@@ -34,6 +34,9 @@ exit
 umount -R /mnt
 swapoff -a
 reboot
+
+# After first boot, log in and run as root:
+sudo bash 3-post_boot_config.sh
 ```
 
 ## Disk Layout
@@ -123,6 +126,36 @@ Hook-by-hook:
 
 ## Snapshots and Rollback
 
+### Snapper Configuration (`3-post_boot_config.sh`)
+
+Snapper must be configured after first boot, not in chroot, because it needs
+a running system with mounted subvolumes.
+
+**The `/.snapshots` workaround:** `1-install.sh` creates `@snapshots` as a
+BTRFS subvolume and mounts it at `/.snapshots`. But `snapper create-config /`
+tries to create its own `/.snapshots` subvolume — conflict. The workaround
+(documented in the [Arch wiki](https://wiki.archlinux.org/title/Snapper#Suggested_filesystem_layout)):
+
+1. Unmount `/.snapshots`
+2. Let snapper create its own `/.snapshots` subvolume
+3. Delete snapper's subvolume
+4. Recreate `/.snapshots` as a plain directory
+5. `mount -a` — fstab mounts `@snapshots` back onto `/.snapshots`
+
+Result: snapper stores its data in our `@snapshots` subvolume, which is part
+of the flat layout and accessible via `/btrfs/@snapshots/`.
+
+**Snapshot retention:**
+
+| Config | Hourly | Daily | Weekly | Monthly | Yearly | Number limit |
+|--------|--------|-------|--------|---------|--------|--------------|
+| `root` | 5 | 7 | 0 | 0 | 0 | 10 |
+| `home` | 0 | 14 | 2 | 0 | 0 | 10 |
+
+`snap-pac` (installed in `1-install.sh`) hooks into pacman and creates pre/post
+snapshot pairs automatically for every package transaction. These are in addition
+to the timeline snapshots above.
+
 ### How Snapshots Work
 
 [Snapper](https://wiki.archlinux.org/title/Snapper) creates read-only snapshots
@@ -200,21 +233,32 @@ snapper list
 #    (this preserves the original snapshot in @snapshots/)
 sudo btrfs subvolume snapshot /btrfs/@snapshots/2/snapshot /btrfs/@new
 
-# 3. Replace the current root
-sudo btrfs subvolume delete /btrfs/@
+# 3. Retire the current root and swap in the new one
+sudo mv /btrfs/@ /btrfs/@.broken
 sudo mv /btrfs/@new /btrfs/@
 
 # 4. Reboot into the restored system
 sudo reboot
+
+# 5. After reboot — regenerate GRUB and clean up
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+sudo btrfs subvolume delete --recursive /btrfs/@.broken
 ```
 
-After rebooting, the system is running from the restored `@`. The old root
-is gone (deleted in step 3). All snapshots remain intact in `@snapshots/`.
+**Why regenerate `grub.cfg` after rollback?**
+The restored `@` contains a `grub.cfg` from the time the snapshot was taken —
+it does not know about snapshots created after that point. `grub-btrfsd`
+only regenerates `grub.cfg` when snapshots are created or deleted, not when
+root is swapped. A manual `grub-mkconfig` brings the GRUB menu up to date.
 
-**Note on step 3:** `btrfs subvolume delete` is used instead of `mv @ @.broken`
-to avoid accumulating old broken roots. If you want to keep the broken root
-for inspection, use `mv /btrfs/@ /btrfs/@.broken` instead and delete it later
-with `btrfs subvolume delete /btrfs/@.broken`.
+**Why `mv` then delete after reboot, not `delete` in place?**
+`btrfs subvolume delete` cannot remove a subvolume that contains nested
+subvolumes. `systemd` automatically creates `/var/lib/machines` and
+`/var/lib/portables` as nested BTRFS subvolumes inside `@` during boot.
+This means `btrfs subvolume delete /btrfs/@` will fail with "Directory not
+empty" — even if `@` is not mounted. Renaming with `mv` works because it is
+a metadata-only operation that does not care about contents. After rebooting,
+`--recursive` deletes the nested subvolumes first, then `@.broken` itself.
 
 ### Emergency Rollback — System Won't Boot
 
@@ -238,13 +282,17 @@ mount -o subvolid=5 /dev/nvme0n1p3 /mnt
 ls /mnt/@snapshots/
 cat /mnt/@snapshots/2/info.xml    # check timestamp and description
 
-# Copy the snapshot, replace root
+# Copy the snapshot, retire old root, swap in new one
 btrfs subvolume snapshot /mnt/@snapshots/2/snapshot /mnt/@new
-btrfs subvolume delete /mnt/@
+mv /mnt/@ /mnt/@.broken
 mv /mnt/@new /mnt/@
 
 # Reboot
 reboot -f
+
+# After reboot — regenerate GRUB and clean up
+# sudo grub-mkconfig -o /boot/grub/grub.cfg
+# sudo btrfs subvolume delete --recursive /btrfs/@.broken
 ```
 
 **What is `rd.break`?** It tells the systemd-based initramfs to pause and drop
@@ -334,3 +382,18 @@ Snapper tracks snapshots by their path under `@snapshots/`. Moving a snapshot
 out of that directory breaks snapper's metadata in `info.xml`. Copying (via
 `btrfs subvolume snapshot`) creates a new subvolume while leaving the original
 untouched, so snapper continues to work correctly.
+
+## Troubleshooting
+
+**`pacman: failed to init transaction (unable to lock database)`**
+
+After a rollback, a stale lock file from a previous pacman session may be
+present. This only happens if the rollback interrupted a running pacman
+transaction or if the snapshot was taken while pacman was active. Remove
+the lock file and retry:
+
+```bash
+sudo rm /var/lib/pacman/db.lck
+```
+
+Only do this if you are sure no other pacman process is currently running.
