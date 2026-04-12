@@ -82,6 +82,19 @@ systemctl enable --now snapper-timeline.timer  # creates scheduled snapshots
 systemctl enable --now snapper-cleanup.timer   # prunes old snapshots per config
 
 # =============================================================================
+# MINIMAL GRAPHICAL ENV
+# =============================================================================
+
+sudo pacman -S sway swaybar swaybg swayidle swaylock \
+    foot \
+    xorg-xwayland \
+    pipewire pipewire-pulse wireplumber \
+    mesa vulkan-intel \
+    ttf-dejavu \
+    brightnessctl
+
+
+# =============================================================================
 # DONE
 # =============================================================================
 
