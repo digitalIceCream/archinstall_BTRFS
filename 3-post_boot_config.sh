@@ -8,11 +8,12 @@
 #   /.snapshots already exists as our mounted @snapshots subvolume.
 #   snapper create-config / tries to create /.snapshots itself — conflict.
 #   Workaround:
-#     1. Unmount /.snapshots temporarily
-#     2. Run snapper create-config / (it creates /.snapshots as new subvol)
-#     3. Delete what snapper created
-#     4. Recreate /.snapshots as plain directory
-#     5. Remount — fstab mounts @snapshots back onto it
+#     1. Unmount /.snapshots 
+#     2. Delete /.snapshots directory 
+#     3. Run snapper create-config / (it creates /.snapshots as new subvol)
+#     4. Delete subvolume that snapper created
+#     5. Restore /.snapshots directory
+#     6. Remount — fstab mounts @snapshots back onto it
 #
 #   Result: snapper uses our @snapshots subvolume, not one it created.
 #
@@ -33,7 +34,7 @@ echo "=== Configuring snapper ==="
 
 # Root config
 umount /.snapshots
-rm -d /.snaphots
+rm -d /.snapshots
 snapper -c root create-config /
 btrfs subvolume delete /.snapshots
 mkdir /.snapshots
